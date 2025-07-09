@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!-- Country Checklist Builder – PyleaMUN (always-online, reliable auto‑fill) -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Country Checklist Builder | PyleaMUN</title>
+<style>
+:root{--teal:#006d7c;--bg:#f7f9fa;--card:#ffffff;--border:#e2e8f0;--text:#111827;--shadow:0 2px 4px rgba(0,0,0,.06);--radius:.75rem;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+body{background:var(--bg);color:var(--text);line-height:1.4;}
+header{padding:1rem .5rem 1.25rem;background:var(--card);box-shadow:var(--shadow);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;}
+header h1{color:var(--teal);font-size:1.35rem;margin:0;white-space:nowrap;}
+header img{width:110px;height:auto;border-radius:var(--radius);}
+header .credit{font-size:.9rem;color:var(--teal);font-weight:600;white-space:nowrap;}
+main{max-width:900px;margin:0 auto;padding:1rem;}
+input,textarea{width:100%;padding:.5rem;margin:.25rem 0;border:1px solid var(--border);border-radius:.5rem;}
+fieldset{border:1px solid var(--border);padding:1rem;margin:1rem 0;background:var(--card);box-shadow:var(--shadow);}legend{font-weight:700;color:var(--teal);}label{font-weight:600;display:block;margin-top:.5rem;}
+button{padding:.5rem 1rem;border:none;border-radius:.5rem;background:var(--teal);color:#fff;font-weight:600;cursor:pointer;box-shadow:var(--shadow);}button:disabled{opacity:.5;cursor:not-allowed;}
+.ext-links{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:1rem;}
+.ext-btn{flex:1 1 260px;padding:.5rem 1rem;text-align:center;text-decoration:none;border-radius:.5rem;background:#0a9396;color:#fff;font-weight:600;box-shadow:var(--shadow);} .ext-btn:hover{background:#08767b;}
+#status{font-size:.85rem;margin-top:.25rem;color:#065f46;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Country Checklist Builder</h1>
+  <img src="pyleaMUNfinallogo.png" alt="PyleaMUN logo" />
+  <span class="credit">Created by Panagiotis Domvros</span>
+</header>
+<div style="padding:0 1rem 1rem;max-width:900px;margin:0 auto;">
+  <label for="countrySelect" style="font-weight:700;">Country:</label>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+    <input list="countries" id="countrySelect" placeholder="Start typing…" style="flex:1 1 260px;" />
+    <button id="loadBtn" disabled style="flex:0 0 100px;">Load</button>
+    <span id="status"></span>
+  </div>
+  <datalist id="countries"></datalist>
+</div>
+<main>
+<form id="checklist">
+  <fieldset>
+    <legend>I. Identity</legend>
+    <label>Surface (km²)<input id="surface" /></label>
+    <label>Population<input id="pop" /></label>
+    <label>Population/km²<input id="density" /></label>
+    <label>Capital<input id="capital" /></label>
+    <label>Continent<input id="continent" /></label>
+    <label>Bordering Countries<textarea id="borders" rows="2"></textarea></label>
+  </fieldset>
+  <fieldset>
+    <legend>II. Cultural aspects</legend>
+    <label>Official Language(s)<input id="languages" /></label>
+    <label>Ethnic Groups (top 3)<textarea id="ethnic" rows="2"></textarea></label>
+    <label>Main Religion(s)<textarea id="religion" rows="2"></textarea></label>
+  </fieldset>
+  <fieldset>
+    <legend>III. Economic aspects</legend>
+    <label>Main Exports<textarea id="exports" rows="2"></textarea></label>
+    <label>Main Imports<textarea id="imports" rows="2"></textarea></label>
+    <label>Main Natural Resources<textarea id="resources" rows="2"></textarea></label>
+  </fieldset>
+  <button type="button" onclick="window.print()">Print / Save PDF</button>
+</form>
+<div class="ext-links">
+  <a class="ext-btn" href="https://panagiotis-domvros.github.io/position-paper/" target="_blank" rel="noopener">Position Paper Builder</a>
+  <a class="ext-btn" href="https://panagiotis-domvros.github.io/draft-resolution/" target="_blank" rel="noopener">Draft Resolution Builder</a>
+</div>
+</main>
+<script>
+const listEl=document.getElementById('countries');const inputEl=document.getElementById('countrySelect');const loadBtn=document.getElementById('loadBtn');const status=document.getElementById('status');let COUNTRIES=[];
+(async()=>{try{const res=await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,cca3,area,population,capital,region,borders,languages');const data=await res.json();COUNTRIES=data.sort((a,b)=>a.name.common.localeCompare(b.name.common));COUNTRIES.forEach(c=>{const opt=document.createElement('option');opt.value=c.name.common;listEl.appendChild(opt);});loadBtn.disabled=false;}catch(e){status.textContent='❗ Cannot reach REST Countries API.';}})();
+function byId(x){return document.getElementById(x);}function fill(id,val){byId(id).value=val||'—';}
+const EXTRA_FACTS={
+  "AND":{ethnic:"Andorran 48%, Spanish 26%, Portuguese 12%, French 6%, other 8%",religion:"Roman Catholic 90%",exports:"tobacco products, furniture, electric power",imports:"consumer goods, food, fuel",resources:"hydropower, mineral water"},
+  "BHS":{ethnic:"African descent 90.6%, European & mixed 4.7%, other 4.7%",religion:"Protestant 69.9%, Roman Catholic 12%, other Christian 13%, none/other 5.1%",exports:"gold, crustaceans, seafood, salt",imports:"machinery, vehicles, oil, food",resources:"salt, aragonite, timber, arable land"}
+};
+loadBtn.onclick=async()=>{
+  const name=inputEl.value.trim();if(!name)return;const c=COUNTRIES.find(x=>x.name.common.toLowerCase()===name.toLowerCase());if(!c){alert('Country not in list');return;}
+  status.style.color='#065f46';status.textContent='Fetching data…';
+  /* Identity */
+  fill('surface',c.area?.toLocaleString());fill('pop',c.population?.toLocaleString());fill('density',c.area?Math.round(c.population/c.area).toLocaleString():'—');fill('capital',(c.capital&&c.capital[0])||'—');fill('continent',c.region||'—');fill('borders',c.borders?c.borders.join(', '):'—');fill('languages',c.languages?Object.values(c.languages).join(', '):'—');
+  /* Cultural & Economic via CIA Factbook */
+  const code=c.cca3.toLowerCase();let factDone=false;try{
+    const fb=await fetch(`https://raw.githubusercontent.com/factbook/factbook.json/master/${code}.json`).then(r=>{if(!r.ok)throw new Error('no FB');return r.json();});const people=fb['People and Society']||{};fill('ethnic',people['Ethnic groups']?.text);fill('religion',people['Religions']?.text);const econ=fb['Economy']||{};fill('exports',econ['Exports']?.text);fill('imports',econ['Imports']?.text);fill('resources',econ['Natural resources']?.text);factDone=true;
+  }catch(e){}
+  /* Fallback to curated EXTRA_FACTS */
+  const extra=EXTRA_FACTS[c.cca3];if(extra){['ethnic','religion','exports','imports','resources'].forEach(f=>{if(byId(f).value==='—')fill(f,extra[f]);});}
+  status.textContent=factDone||extra? '✔ Fully populated – review/edit as needed.' : '✔ Basics filled. Add details manually if blank.';
+};
+</script>
+</body>
+</html>
